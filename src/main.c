@@ -14,10 +14,10 @@ void printFaces(struct Mesh*);
 
 int main(void) {
 	// load an .OBJ file
-	struct Model* pModel = loadObj("models/Cube.obj");
+	struct Model* pModel = loadObj("models/myfile.obj");
 	
 	// print model data
-	for (unsigned short i = 0; i < pModel->numMeshes; ++i) {
+	for (unsigned char i = 0; i < pModel->numMeshes; ++i) {
 		printObjectName(&pModel->meshes[i]);
 		
 		printVertices(&pModel->meshes[i]);
@@ -73,7 +73,7 @@ void printFaces(struct Mesh* pMesh)
 {
 	puts("\nPolygonal faces: ");
 	for (unsigned short i = 0; i < pMesh->numFaces; ++i) {
-		for (unsigned short j = 0; j < pMesh->numIndices; ++j) {
+		for (unsigned char j = 0; j < pMesh->numIndices; ++j) {
 			printf("%d", pMesh->faces[i].indices[j].x);
 			
 			if (pMesh->faces[i].indices[j].y || pMesh->faces[i].indices[j].z) printf("/");

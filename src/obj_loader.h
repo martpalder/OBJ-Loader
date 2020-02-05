@@ -34,27 +34,32 @@ struct Mesh {
 	struct Vec3f vertices[NUM_ELEMENTS];
 	struct Vec2f texCoords[NUM_ELEMENTS];
 	struct Vec3f normals[NUM_ELEMENTS];
-	unsigned short smooth;
+	unsigned char smooth;
 	struct Face faces[NUM_ELEMENTS];
 	
 	unsigned short numVertices;
 	unsigned short numTexCoords;
 	unsigned short numNormals;
 	unsigned short numFaces;
-	unsigned short numIndices;
+	unsigned char numIndices;
 };
 
 struct Model {
 	struct Mesh meshes[NUM_MESHES];
-	unsigned short numMeshes;
+	unsigned char numMeshes;
 };
 
-struct Model* loadObj(const char FILE_PATH[]) {
+struct Model* loadObj(const char* FILE_PATH) {
 	// open an .OBJ file
 	FILE* fp = fopen(FILE_PATH, "r");
 	if (!fp){
-		perror("\nUnable to open file");
-		printf("%c%s%c\n", '\"', FILE_PATH, '\"');
+		fprintf(stderr, "\nUnable to open file \"%s\": %s\n", FILE_PATH, strerror(errno));
+		exit(0);
+	}
+	else if (!strstr(FILE_PATH, ".obj") && !strstr(FILE_PATH, ".OBJ")) {
+		unsigned char filePos = strcspn(FILE_PATH, ".");
+		printf("\n%s%s", "Incorrect file format: ", FILE_PATH + filePos);
+		puts("\nAn .OBJ file is required");
 		exit(0);
 	}
 	
@@ -65,32 +70,19 @@ struct Model* loadObj(const char FILE_PATH[]) {
 	static struct Model model;
 	struct Model* pModel = &model;
 	
-	// object name
-	char objectName[MAX_STRING_SIZE];
-	
-	// smooth shading
-	unsigned short smooth;
-	char strSmooth[4];
+	// pointer to mesh
+	struct Mesh* pMesh;
 	
 	// temporary variables
 	unsigned short pos;
 	unsigned short strSize;
-	unsigned short indiceCheck = 0;
+	char str[MAX_STRING_SIZE];
 	
-	struct Mesh* pMesh;
-	
-	char* slashCheck1;
-	char* slashCheck2;
-	char* spaceCheck;
-	
-	char strVertex[MAX_STRING_SIZE];
-	char strTexCoord[MAX_STRING_SIZE];
-	char strNormal[MAX_STRING_SIZE];
-	char strIndice[MAX_STRING_SIZE];
+	// indice check
+	unsigned short indiceCheck;
 	
 	// for every line
 	while (fgets(line, sizeof(line), fp)) {
-		// if line is a comment or is empty: read next line
 		if (line[0] == '#' || line[1] == 0) continue;
 		else if (line[0] == 'o') {
 			// get pointer to mesh
@@ -108,24 +100,30 @@ struct Model* loadObj(const char FILE_PATH[]) {
 			
 			// get vertex X
 			strSize = strcspn(line + pos, " ");
-			strncpy(strVertex, line + pos, strSize);
+			strncpy(str, line + pos, strSize);
 			// convert to float
-			pMesh->vertices[pMesh->numVertices].x = atof(strVertex);
+			pMesh->vertices[pMesh->numVertices].x = atof(str);
+			// clear string
+			memset(str, 0, sizeof(str));
 			// change position
 			pos += strSize + 1;
 			
 			// get vertex Y
 			strSize = strcspn(line + pos, " ");
-			strncpy(strVertex, line + pos, strSize);
+			strncpy(str, line + pos, strSize);
 			// convert to float
-			pMesh->vertices[pMesh->numVertices].y = atof(strVertex);
+			pMesh->vertices[pMesh->numVertices].y = atof(str);
+			// clear string
+			memset(str, 0, sizeof(str));
 			// change position
 			pos += strSize + 1;
 			
 			// get vertex Z
-			strcpy(strVertex, line + pos);
+			strcpy(str, line + pos);
 			// convert to float
-			pMesh->vertices[pMesh->numVertices++].z = atof(strVertex);
+			pMesh->vertices[pMesh->numVertices++].z = atof(str);
+			// clear string
+			memset(str, 0, sizeof(str));
 		}
 		else if (line[0] == 'v' && line[1] == 't') {
 			// start at position 3
@@ -133,16 +131,20 @@ struct Model* loadObj(const char FILE_PATH[]) {
 			
 			// get texture coordinate U
 			strSize = strcspn(line + pos, " ");
-			strncpy(strTexCoord, line + pos, strSize);
+			strncpy(str, line + pos, strSize);
 			// convert to float
-			pMesh->texCoords[pMesh->numTexCoords].x = atof(strTexCoord);
+			pMesh->texCoords[pMesh->numTexCoords].x = atof(str);
+			// clear string
+			memset(str, 0, sizeof(str));
 			// change position
 			pos += strSize + 1;
 			
 			// get texture coordinate V
-			strcpy(strTexCoord, line + pos);
+			strcpy(str, line + pos);
 			// convert to float
-			pMesh->texCoords[pMesh->numTexCoords++].y = atof(strTexCoord);
+			pMesh->texCoords[pMesh->numTexCoords++].y = atof(str);
+			// clear string
+			memset(str, 0, sizeof(str));
 		}
 		else if (line[0] == 'v' && line[1] == 'n') {
 			// start at position 3
@@ -150,31 +152,39 @@ struct Model* loadObj(const char FILE_PATH[]) {
 			
 			// get vertex normal X
 			strSize = strcspn(line + pos, " ");
-			strncpy(strNormal, line + pos, strSize);
+			strncpy(str, line + pos, strSize);
 			// convert to float
-			pMesh->normals[pMesh->numNormals].x = atof(strNormal);
+			pMesh->normals[pMesh->numNormals].x = atof(str);
+			// clear string
+			memset(str, 0, sizeof(str));
 			// change position
 			pos += strSize + 1;
 			
 			// get vertex normal Y
 			strSize = strcspn(line + pos, " ");
-			strncpy(strNormal, line + pos, strSize);
+			strncpy(str, line + pos, strSize);
 			// convert to float
-			pMesh->normals[pMesh->numNormals].y = atof(strNormal);
+			pMesh->normals[pMesh->numNormals].y = atof(str);
+			// clear string
+			memset(str, 0, sizeof(str));
 			// change position
 			pos += strSize + 1;
 			
 			// get vertex normal Z
-			strcpy(strNormal, line + pos);
+			strcpy(str, line + pos);
 			// convert to float
-			pMesh->normals[pMesh->numNormals++].z = atof(strNormal);
+			pMesh->normals[pMesh->numNormals++].z = atof(str);
+			// clear string
+			memset(str, 0, sizeof(str));
 		}
 		else if (line[0] == 's') {
 			// get smooth shading
-			strcpy(strSmooth, line + 2);
+			strcpy(str, line + 2);
 			// convert to int
-			if (strSmooth == "1") pMesh->smooth = 1;
-			else if (strSmooth == "off") pMesh->smooth = 0;
+			if (str == "1") pMesh->smooth = 1;
+			else if (str == "off") pMesh->smooth = 0;
+			// clear string
+			memset(str, 0, sizeof(str));
 		}
 		else if (line[0] == 'f') {
 			// start at position 2
@@ -183,74 +193,71 @@ struct Model* loadObj(const char FILE_PATH[]) {
 			// check number of indices
 			if (!indiceCheck) {
 				pMesh->numIndices = 1;
-				for (unsigned short i = pos; i < sizeof(line); ++i) {
+				for (unsigned char i = pos; i < sizeof(line); ++i) {
 					if (line[i] == ' ') ++pMesh->numIndices;
 				}
 				if (pMesh->numIndices > NUM_INDICES) pMesh->numIndices = NUM_INDICES;
 				indiceCheck = 1;
 			}
 			
-			for (unsigned short i = 0; i < pMesh->numIndices; ++i) {
-				slashCheck1 = strstr(line + pos, "//");
-				// if "//" exists in a string
-				if (slashCheck1) {
-					// get position of "//"
-					strSize = strcspn(line + pos, "//") + 1;
-					slashCheck2 = NULL;
-				}
-				// otherwise
-				else {
-					// check if "/" exists in a string
-					slashCheck2 = strstr(line + pos, "/");
-					// get position of "/" or " "
-					if (slashCheck2) strSize = strcspn(line + pos, "/");
-					else strSize = strcspn(line + pos, " ");
-				}
+			for (unsigned char i = 0; i < pMesh->numIndices; ++i) {
+				// if "//" exists in a string: get position of "//"
+				if (strstr(line, "//")) strSize = strcspn(line + pos, "//") + 1;
+				// if "/" exists in a string: get position of "/"
+				else if (strstr(line + pos, "/")) strSize = strcspn(line + pos, "/");
+				// otherwise: get position of " "
+				else strSize = strcspn(line + pos, " ");
 				// get vertex indice
-				strncpy(strIndice, line + pos, strSize);
+				strncpy(str, line + pos, strSize);
 				// change position
 				pos += strSize + 1;
 				// convert to float
-				pMesh->faces[pMesh->numFaces].indices[i].x = atoi(strIndice);
-				// clear the string
-				memset(strIndice, 0, sizeof(strIndice));
+				pMesh->faces[pMesh->numFaces].indices[i].x = atoi(str);
+				// clear string
+				memset(str, 0, sizeof(str));
 				
-				if (slashCheck2) {
+				// if "//" doesn't exist in a string and "/" does
+				if (!strstr(line, "//") && strstr(line, "/")) {
 					// get position of '/'
 					strSize = strcspn(line + pos, "/");
 					// get vertex texture coordinate indice
-					strncpy(strIndice, line + pos, strSize);
+					strncpy(str, line + pos, strSize);
 					// change position
 					pos += strSize + 1;
 					// convert to float
-					pMesh->faces[pMesh->numFaces].indices[i].y = atoi(strIndice);
-					// clear the string
-					memset(strIndice, 0, sizeof(strIndice));
+					pMesh->faces[pMesh->numFaces].indices[i].y = atoi(str);
+					// clear string
+					memset(str, 0, sizeof(str));
 				}
 				
-				if (slashCheck1 || slashCheck2) {
-					// check if ' ' exists at the end of a string
-					spaceCheck = strpbrk(line + pos, " ");
-					if (spaceCheck) {
+				// if "//" or "/" exists in a string
+				if (strstr(line, "//") || strstr(line, "/")) {
+					// check if ' ' exists at the end of an indice
+					if (strpbrk(line + pos, " ")) {
 						// get position of ' '
 						strSize = strcspn(line + pos, " ");
 						// get vertex normal indice
-						strncpy(strIndice, line + pos, strSize);
+						strncpy(str, line + pos, strSize);
 						// change position
 						pos += strSize + 1;
 					}
-					else strcpy(strIndice, line + pos);	// get vertex normal indice
+					// otherwise: get vertex normal indice
+					else strcpy(str, line + pos);
 					// convert to float
-					pMesh->faces[pMesh->numFaces].indices[i].z = atoi(strIndice);
-					// clear the string
-					memset(strIndice, 0, sizeof(strIndice));
+					pMesh->faces[pMesh->numFaces].indices[i].z = atoi(str);
+					// clear string
+					memset(str, 0, sizeof(str));
 				}
 			}
 			
-			// icrease number of faces
+			// increase number of faces
 			++pMesh->numFaces;
 		}
 	}
+	
+	// set mesh pointer to null pointer
+	pMesh = NULL;
+	
 	// close the file
 	fclose(fp);
 	
